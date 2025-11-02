@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from fastapi.responses import HTMLResponse
 
 # -----------------------------
 # Domain Models (Pydantic)
@@ -191,6 +192,19 @@ async def tick() -> Dict[str, str]:
     # TODO: Advance in-memory simulation: move robots along paths, update order/robot status
     return {"status": "ok", "note": "tick advanced (no-op stub)"}
 
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    robots = STATE["robots"]
+    orders = STATE["orders"]
+    html = "<h1>AGV Fleet Dashboard</h1>"
+    html += "<h2>Robots</h2><ul>"
+    for r in robots:
+        html += f"<li>{r.name} — {r.status} at {r.node}</li>"
+    html += "</ul><h2>Orders</h2><ul>"
+    for o in orders:
+        html += f"<li>{o.name}: {o.source} → {o.target} [{o.status}]</li>"
+    html += "</ul>"
+    return html
 # -----------------------------
 # Run (if executed directly)
 # -----------------------------
