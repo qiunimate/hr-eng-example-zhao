@@ -17,7 +17,7 @@ Choose 3-5
 
 [] Tick simulation: POST /tick advances time by one “step”; robots move one edge per tick, update their node; when reaching target, mark order DONE, robot IDLE.
 
-[] State & validation: Validate nodes exist; keep state in memory; guard against duplicate order names; return helpful 4xx errors.
+[x] State & validation: Validate nodes exist; keep state in memory; guard against duplicate order names; return helpful 4xx errors.
 
 [] OpenAPI polish: Ensure models/enums are documented; add tags and examples; verify with /docs.
 
@@ -60,10 +60,10 @@ Choose 3-5
 
 ## Acceptance:
 
-- App loads graph and lists robots + orders.
-- Adding an order triggers scheduling when an IDLE robot exists.
-- Robots visibly move along paths over time; orders progress to DONE.
-- No runtime errors; basic empty/error states handled.
+[x]App loads graph and lists robots + orders.
+[]Adding an order triggers scheduling when an IDLE robot exists.
+[]Robots visibly move along paths over time; orders progress to DONE.
+[]No runtime errors; basic empty/error states handled.
 
 # Frontend
 

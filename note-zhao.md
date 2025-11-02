@@ -26,6 +26,14 @@ How to set up the provided codebase for local development and testing? Please pr
 #### 2.0 Plan
 We need to figure out what is the best order to implement the features. So that we have a working system as soon as possible, and then we can iterate on it. 
 
+So here is my plan:
+1. Dashboard + State & validation
+2. Pathfinding (Dijkstra's algorithm)
+3. Scheduler (nearest-idle)
+4. Tick simulation
+5. OpenAPI polish + Deterministic tests
+6. to be continued...
+
 #### 2.1 Dashboard
 
 The first step is to get a dashboard which display current robots and orders status. This is important because it helps to visualize the current state of the system and verify the correctness of the implementation. 
