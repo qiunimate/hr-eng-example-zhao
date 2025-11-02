@@ -46,6 +46,7 @@ class Route(BaseModel):
     next_index: int  # index of next node in path to move to
     order: str
     path: List[str]  # sequence of node names
+    remaining_weight: float = 0  # ticks left to finish current edge
 
 class RoutesResponse(BaseModel):
     routes: List[Route]

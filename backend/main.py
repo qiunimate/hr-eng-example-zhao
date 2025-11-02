@@ -104,31 +104,42 @@ async def get_routes() -> RoutesResponse:
 
 @app.post("/tick", tags=["simulation"])
 async def tick() -> Dict[str, str]:
-    # Advance all routes by one step
     for route in STATE.get("routes", []):
-        if route.next_index < len(route.path) - 1:
-            # move to next node
+        robot = next(r for r in STATE["robots"] if r.name == route.robot)
+        
+        # If starting a new edge, initialize remaining_weight
+        if route.remaining_weight == 0 and route.next_index < len(route.path) - 1:
+            # Find edge weight
+            from_node = route.path[route.next_index]
+            to_node = route.path[route.next_index + 1]
+            edge = next((e for e in GRAPH.edges if 
+                         (e.from_ == from_node and e.to == to_node) or 
+                         (e.from_ == to_node and e.to == from_node)), None)
+            route.remaining_weight = edge.weight if edge else 1
+
+        # Advance robot along the edge
+        if route.remaining_weight > 0:
+            route.remaining_weight -= 1  # 1 tick passed
+
+        # If edge completed
+        if route.remaining_weight <= 0 and route.next_index < len(route.path) - 1:
             route.next_index += 1
-            robot = next(r for r in STATE["robots"] if r.name == route.robot)
             robot.node = route.path[route.next_index]
 
-        # route complete
+        # Route completed
         if route.next_index == len(route.path) - 1:
-            robot = next(r for r in STATE["robots"] if r.name == route.robot)
             robot.status = RobotStatus.IDLE
-
             order = next(o for o in STATE["orders"] if o.name == route.order)
             order.status = OrderStatus.DONE
-
-            # remove route from state
             STATE["routes"].remove(route)
 
-    # Assign all NEW orders and FAILED orders
+    # Assign NEW or FAILED orders
     for order in STATE["orders"]:
-        if order.status == OrderStatus.NEW or order.status == OrderStatus.FAILED:
+        if order.status in {OrderStatus.NEW, OrderStatus.FAILED}:
             assign_nearest_idle_robot(order)
 
     return {"status": "ok"}
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard() -> str:
@@ -158,7 +169,7 @@ async def dashboard() -> str:
         "C": (250, 50),
         "D": (250, 150),
         "E": (150, 150),
-        "F": (50, 150)
+        "F": (200, 250)
     }
     
     html = """
@@ -194,7 +205,7 @@ async def dashboard() -> str:
     
     # SVG Map
     svg_width = 400
-    svg_height = 250
+    svg_height = 300
     html += f'<svg width="{svg_width}" height="{svg_height}" class="svg-map">'
     
     # Draw edges first (so they appear behind nodes)
