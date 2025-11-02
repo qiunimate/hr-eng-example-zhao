@@ -96,6 +96,15 @@ GRAPH: Graph = Graph(
     ],
 )
 
+NODE_POSITIONS = {
+    "A": (50, 50),
+    "B": (150, 50),
+    "C": (250, 50),
+    "D": (250, 150),
+    "E": (150, 150),
+    "F": (200, 250)
+    }
+
 SEED_ROBOTS = [
     Robot(name="R1", status=RobotStatus.IDLE, node="A"),
     Robot(name="R2", status=RobotStatus.EXECUTING, node="C"),

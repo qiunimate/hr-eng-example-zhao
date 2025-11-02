@@ -11,11 +11,11 @@ There is no right or wrong. We are curious about problem solving capabilities.
 ## Task:
 Choose 3-5
 
-[] Scheduler (nearest-idle): Implement assign_nearest_idle_robot(order) using shortest-path to the order’s source, tie-break by robot name; flip statuses (NEW→IN_PROGRESS, robot IDLE→EXECUTING) and store the planned route.
+[x] Scheduler (nearest-idle): Implement assign_nearest_idle_robot(order) using shortest-path to the order’s source, tie-break by robot name; flip statuses (NEW→IN_PROGRESS, robot IDLE→EXECUTING) and store the planned route.
 
-[] Pathfinding: Add Dijkstra/A* over the provided graph (bidirectional edges, weight as cost). Return both distance and path.
+[x] Pathfinding: Add Dijkstra/A* over the provided graph (bidirectional edges, weight as cost). Return both distance and path.
 
-[] Tick simulation: POST /tick advances time by one “step”; robots move one edge per tick, update their node; when reaching target, mark order DONE, robot IDLE.
+[x] Tick simulation: POST /tick advances time by one “step”; robots move one edge per tick, update their node; when reaching target, mark order DONE, robot IDLE.
 
 [x] State & validation: Validate nodes exist; keep state in memory; guard against duplicate order names; return helpful 4xx errors.
 
@@ -28,11 +28,11 @@ Choose 3-5
 
 [] Collision avoidance (edge reservations): Prevent two robots from occupying the same edge in the same tick; simple time-slot reservation is enough (defer one robot if conflict).
 
-[] Batch scheduling: On each tick, try to assign all NEW orders (recompute as robots free up).
+[x] Batch scheduling: On each tick, try to assign all NEW orders (recompute as robots free up).
 
 [] Preemption guardrails: Don’t reassign an order already IN_PROGRESS; allow manual cancellation path to set FAILED.
 
-[] Audit log: Append events (order created/assigned/finished, robot moved) and expose GET /events?since=…&limit=….
+[x] Audit log: Append events (order created/assigned/finished, robot moved) and expose GET /events?since=…&limit=….
 
 #### Stretch goals
 
@@ -61,9 +61,9 @@ Choose 3-5
 ## Acceptance:
 
 [x]App loads graph and lists robots + orders.
-[]Adding an order triggers scheduling when an IDLE robot exists.
+[x]Adding an order triggers scheduling when an IDLE robot exists.
 []Robots visibly move along paths over time; orders progress to DONE.
-[]No runtime errors; basic empty/error states handled.
+[x]No runtime errors; basic empty/error states handled.
 
 # Frontend
 

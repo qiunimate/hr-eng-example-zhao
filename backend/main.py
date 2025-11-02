@@ -57,10 +57,30 @@ async def healthz():
     return {"ok": True}
 
 @app.get("/events", response_model=List[Event])
-async def get_events(limit: Optional[int] = None):
+async def get_events(limit: Optional[int] = None, since: Optional[str] = None):
+    """
+    Retrieve events, optionally limited and filtered by a 'since' timestamp (ISO 8601).
+    """
     events = STATE.get("events", [])
+
+    if since is not None:
+        try:
+            # Parse 'since' as UTC-aware datetime
+            since_dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid ISO 8601 timestamp for 'since'")
+        
+        # Filter events, making event times UTC-aware
+        filtered_events = []
+        for e in events:
+            event_time = datetime.fromisoformat(e.time.replace("Z", "+00:00"))
+            if event_time > since_dt:
+                filtered_events.append(e)
+        events = filtered_events
+
     if limit is not None:
-        events = events[-limit:]  # Get the most recent 'limit' events
+        events = events[-limit:]
+
     return events[::-1]
 
 @app.post("/addOrder", response_model=Order, tags=["orders"])
@@ -99,8 +119,7 @@ async def get_graph() -> Graph:
 # NOTE: These are *stubs* for stretch goals; they currently return empty data.
 @app.get("/routes", response_model=RoutesResponse, tags=["simulation"])
 async def get_routes() -> RoutesResponse:
-    # TODO: Fill with planned paths once a scheduler is implemented server-side
-    return RoutesResponse(routes=[])
+    return RoutesResponse(routes=STATE.get("routes", []))
 
 @app.post("/tick", tags=["simulation"])
 async def tick() -> Dict[str, str]:
@@ -120,11 +139,13 @@ async def tick() -> Dict[str, str]:
         # Advance robot along the edge
         if route.remaining_weight > 0:
             route.remaining_weight -= 1  # 1 tick passed
+            log_event("robot_moving", {"robot": robot.name, "from": robot.node, "to": route.path[route.next_index + 1], "remaining_weight": route.remaining_weight})
 
         # If edge completed
         if route.remaining_weight <= 0 and route.next_index < len(route.path) - 1:
             route.next_index += 1
             robot.node = route.path[route.next_index]
+            log_event("robot_arrived", {"robot": robot.name, "at": robot.node})
 
         # Route completed
         if route.next_index == len(route.path) - 1:
@@ -132,12 +153,13 @@ async def tick() -> Dict[str, str]:
             order = next(o for o in STATE["orders"] if o.name == route.order)
             order.status = OrderStatus.DONE
             STATE["routes"].remove(route)
+            log_event("order_completed", {"order": order.name, "robot": robot.name, "at": robot.node})
 
     # Assign NEW or FAILED orders
     for order in STATE["orders"]:
         if order.status in {OrderStatus.NEW, OrderStatus.FAILED}:
             assign_nearest_idle_robot(order)
-
+    log_event("tick_processed", {})
     return {"status": "ok"}
 
 
@@ -161,16 +183,33 @@ async def dashboard() -> str:
     for robot in robots:
         if robot.node in node_robots:
             node_robots[robot.node].append(robot.name)
-    
-    # SVG layout configuration
-    node_positions = {
-        "A": (50, 50),
-        "B": (150, 50), 
-        "C": (250, 50),
-        "D": (250, 150),
-        "E": (150, 150),
-        "F": (200, 250)
-    }
+
+    # Compute in-flight robot positions (robots currently traversing an edge)
+    in_flight_positions: Dict[str, tuple[float, float]] = {}
+    for route in routes:
+        # route.next_index points at the current node index; if next_index < len(path)-1
+        # the robot is traversing from path[next_index] -> path[next_index+1]
+        if getattr(route, "remaining_weight", 0) > 0 and route.next_index < len(route.path) - 1:
+            from_node = route.path[route.next_index]
+            to_node = route.path[route.next_index + 1]
+            if from_node in NODE_POSITIONS and to_node in NODE_POSITIONS:
+                x1, y1 = NODE_POSITIONS[from_node]
+                x2, y2 = NODE_POSITIONS[to_node]
+                # find edge weight
+                edge = next((e for e in GRAPH.edges if (e.from_ == from_node and e.to == to_node) or (e.from_ == to_node and e.to == from_node)), None)
+                edge_w = float(edge.weight) if edge else 1.0
+                # compute fraction progressed along edge
+                progressed = max(0.0, min(edge_w - float(route.remaining_weight), edge_w))
+                frac = progressed / edge_w if edge_w != 0 else 1.0
+                rx = x1 + (x2 - x1) * frac
+                ry = y1 + (y2 - y1) * frac
+                in_flight_positions[route.robot] = (rx, ry)
+
+    # Remove in-flight robots from node lists so they aren't double-drawn at the node
+    for robot_name in list(in_flight_positions.keys()):
+        for node_list in node_robots.values():
+            if robot_name in node_list:
+                node_list.remove(robot_name)
     
     html = """
     <!DOCTYPE html>
@@ -210,9 +249,9 @@ async def dashboard() -> str:
     
     # Draw edges first (so they appear behind nodes)
     for edge in GRAPH.edges:
-        if edge.from_ in node_positions and edge.to in node_positions:
-            x1, y1 = node_positions[edge.from_]
-            x2, y2 = node_positions[edge.to]
+        if edge.from_ in list(NODE_POSITIONS.keys()) and edge.to in list(NODE_POSITIONS.keys()):
+            x1, y1 = NODE_POSITIONS[edge.from_]
+            x2, y2 = NODE_POSITIONS[edge.to]
             html += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" class="edge" />'
             # Edge label (weight)
             mid_x = (x1 + x2) / 2
@@ -220,7 +259,7 @@ async def dashboard() -> str:
             html += f'<text x="{mid_x}" y="{mid_y - 5}" class="edge-text">{edge.weight}</text>'
     
     # Draw nodes
-    for node, (x, y) in node_positions.items():
+    for node, (x, y) in NODE_POSITIONS.items():
         # Node circle
         html += f'<circle cx="{x}" cy="{y}" r="20" class="node" />'
         # Node label
@@ -229,11 +268,19 @@ async def dashboard() -> str:
         # Draw robots at this node
         robots_here = node_robots[node]
         for i, robot_name in enumerate(robots_here):
+            # If this robot is currently in-flight along an edge, skip drawing it at the node
+            if robot_name in in_flight_positions:
+                continue
             robot_x = x - 15 + (i * 15)
             robot_y = y - 30
             html += f'<circle cx="{robot_x}" cy="{robot_y}" r="8" class="robot" />'
             html += f'<text x="{robot_x}" y="{robot_y + 3}" class="robot-text">{robot_name}</text>'
     
+    # Draw in-flight robots (between nodes) inside the same SVG
+    for robot_name, (rx, ry) in in_flight_positions.items():
+        html += f'<circle cx="{rx}" cy="{ry}" r="8" class="robot" />'
+        html += f'<text x="{rx}" y="{ry + 3}" class="robot-text">{robot_name}</text>'
+
     html += '</svg>'
     
     # Status sections
