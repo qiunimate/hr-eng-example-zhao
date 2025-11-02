@@ -34,4 +34,6 @@ The first step is to get a dashboard which display current robots and orders sta
 I want to firstly create a dashboard page to visualize essential information as said in the acceptance:
 
 - App loads graph and lists robots + orders.
+
+Please also add doc string for each function you create.
 ```
