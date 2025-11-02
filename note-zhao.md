@@ -1,0 +1,37 @@
+# Challenge
+
+## Description
+In this file notes the steps and strategies used to solve the challenge.
+
+## Backend challenge
+The reason I started with backend challenge is that it is mainly in python. I can spend more time in solving the problem and show you my thought process instead of configuration etc.
+
+### 1. Comprehension and configuration
+The first step is to read the README, instruction email and the provided code.
+
+
+```text
+# Prompt 1: Context interpretation:
+Here are the context email and README.md of a interview challenge. Summarize the requirements and tasks for the backend component. Also how do you suggest me to complete this challenge effectively?
+
+# Prompt 2: Code interpretation
+Here is the python file (main.py), please analyze its functionality and structure. Summarize the main components and their interactions.
+
+# Prompt 3: Setup
+How to set up the provided codebase for local development and testing? Please provide step-by-step instructions.
+```
+
+### 2. Problem solving
+
+#### 2.0 Plan
+We need to figure out what is the best order to implement the features. So that we have a working system as soon as possible, and then we can iterate on it. 
+
+#### 2.1 Dashboard
+
+The first step is to get a dashboard which display current robots and orders status. This is important because it helps to visualize the current state of the system and verify the correctness of the implementation. 
+
+```text
+I want to firstly create a dashboard page to visualize essential information as said in the acceptance:
+
+- App loads graph and lists robots + orders.
+```
