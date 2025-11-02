@@ -56,6 +56,13 @@ async def seed_state() -> None:
 async def healthz():
     return {"ok": True}
 
+@app.get("/events", response_model=List[Event])
+async def get_events(limit: Optional[int] = None):
+    events = STATE.get("events", [])
+    if limit is not None:
+        events = events[-limit:]  # Get the most recent 'limit' events
+    return events[::-1]
+
 @app.post("/addOrder", response_model=Order, tags=["orders"])
 async def add_order(req: AddOrderRequest) -> Order:
     # Validate nodes exist in graph
@@ -97,8 +104,31 @@ async def get_routes() -> RoutesResponse:
 
 @app.post("/tick", tags=["simulation"])
 async def tick() -> Dict[str, str]:
-    # TODO: Advance in-memory simulation: move robots along paths, update order/robot status
-    return {"status": "ok", "note": "tick advanced (no-op stub)"}
+    # Advance all routes by one step
+    for route in STATE.get("routes", []):
+        if route.next_index < len(route.path) - 1:
+            # move to next node
+            route.next_index += 1
+            robot = next(r for r in STATE["robots"] if r.name == route.robot)
+            robot.node = route.path[route.next_index]
+
+        # route complete
+        if route.next_index == len(route.path) - 1:
+            robot = next(r for r in STATE["robots"] if r.name == route.robot)
+            robot.status = RobotStatus.IDLE
+
+            order = next(o for o in STATE["orders"] if o.name == route.order)
+            order.status = OrderStatus.DONE
+
+            # remove route from state
+            STATE["routes"].remove(route)
+
+    # Assign all NEW orders and FAILED orders
+    for order in STATE["orders"]:
+        if order.status == OrderStatus.NEW or order.status == OrderStatus.FAILED:
+            assign_nearest_idle_robot(order)
+
+    return {"status": "ok"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard() -> str:
@@ -244,6 +274,17 @@ async def dashboard() -> str:
                 </ul>
             </div>
     """
+
+    # add auto-refresh script
+    html += """
+    <script>
+    // Reload the entire dashboard every 2 seconds
+    setInterval(() => {
+        window.location.reload();
+    }, 2000);
+    </script>
+    """
+    html += "</div></body></html>"
     
     return html
 # -----------------------------
