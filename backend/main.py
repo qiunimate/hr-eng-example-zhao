@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from backend.models import *
-from backend.helpers import log_event
+from backend.helpers import *
 # -----------------------------
 # App Setup
 # -----------------------------
@@ -69,8 +69,8 @@ async def add_order(req: AddOrderRequest) -> Order:
 
     order = Order(name=req.name, source=req.source, target=req.target, status=OrderStatus.NEW)
     STATE["orders"].append(order)
+    assign_nearest_idle_robot(order)
     log_event("order_created", {"order": order.name, "source": order.source, "target": order.target})
-
     return order
 
 @app.get("/getOrders", response_model=OrdersResponse, tags=["orders"])
@@ -110,6 +110,7 @@ async def dashboard() -> str:
     """
     robots = STATE["robots"]
     orders = STATE["orders"]
+    routes = STATE["routes"]
     
     # Create a mapping of node -> list of robots at that node
     node_robots: Dict[str, List[str]] = {}
@@ -215,13 +216,34 @@ async def dashboard() -> str:
     """
     
     for o in orders:
+        # icons
         status_icon = {
             OrderStatus.NEW: "🆕",
             OrderStatus.IN_PROGRESS: "🔄", 
             OrderStatus.DONE: "✅",
             OrderStatus.FAILED: "❌"
         }.get(o.status, "❓")
+
         html += f'<li>{status_icon} <strong>{o.name}</strong>: {o.source} → {o.target} [{o.status.value}]</li>'
+    
+    # Route section
+    html += """
+            </ul>
+            </div>
+            <div class="status-section">
+                <h2>Routes</h2>
+                <ul>
+    """
+
+    for route in routes:
+        remaining_path = route.path[route.next_index:]
+        html += f'<li><strong>{route.robot}</strong> → Order: <strong>{route.order}</strong> | Remaining path: {" → ".join(remaining_path)}</li>'
+
+
+    html += """
+                </ul>
+            </div>
+    """
     
     return html
 # -----------------------------
@@ -238,3 +260,5 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
     )
+
+

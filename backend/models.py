@@ -1,4 +1,4 @@
-from typing import List, Dict 
+from typing import List, Dict, Optional
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -43,7 +43,9 @@ class Graph(BaseModel):
 
 class Route(BaseModel):
     robot: str
-    path: List[str]  # sequence of node ids
+    next_index: int  # index of next node in path to move to
+    order: str
+    path: List[str]  # sequence of node names
 
 class RoutesResponse(BaseModel):
     routes: List[Route]
@@ -76,6 +78,8 @@ class RobotsResponse(BaseModel):
 STATE: Dict[str, List] = {
     "orders": [],
     "robots": [],
+    "routes": [],
+    "events": [],
 }
 
 GRAPH: Graph = Graph(

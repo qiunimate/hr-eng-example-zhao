@@ -55,9 +55,15 @@ Please also add doc string for each function you create.
 The second step is to implement the path finding algorithm, which can be used by the scheduler to assign the nearest idle robot to an order. 
 
 ```text
-please implement Dijkstra's algorithm for path finding. The function should take in a start node and a goal node, and return the shortest distance and the path taken. 
+please implement an algorithm for path finding. The function should take in a start node and a goal node, and return the shortest distance and the path taken. 
 
 Also add doc string and comments explaining the logic.
 ```
 
 #### 2.3 Scheduler
+
+The third step is to implement the scheduler, which assigns the nearest idle robot to an order. 
+The class Route including robot name, next index, path and order name is created to store the planned route, and also display in the dashboard.
+
+There is a problem that if an order is created but there is no idle robot, then the order will not be assigned. This is acceptable for now, but we can solve this in the tick function.
+

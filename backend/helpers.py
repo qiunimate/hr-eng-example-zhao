@@ -51,16 +51,17 @@ def assign_nearest_idle_robot(order: Order) -> Optional[Route]:
 
     for r in idle_robots:
         try:
-            dist, path = shortest_path(r.node, order.source)
+            dist, best_path = shortest_path(r.node, order.source)
         except ValueError:
             continue  # No path to source
         if dist < best_distance or (dist == best_distance and (best_robot is None or r.name < best_robot.name)):
             best_robot = r
             best_distance = dist
-            path_to_source = path
+            path_to_source = best_path
 
     if best_robot is None:
         # No robot can reach the order's source node
+        log_event("assignment_failed", {"order": order.name, "from": order.source, "to": order.target})
         return None
 
     # Path from source to target
@@ -73,9 +74,10 @@ def assign_nearest_idle_robot(order: Order) -> Optional[Route]:
     order.status = OrderStatus.IN_PROGRESS
 
     # Save route for tick simulation
-    route = Route(robot=best_robot.name, path=full_path, order=order.name)
-    STATE["routes"].append({"route": route, "next_index": 0})
-    return route
+    best_path = Route(robot=best_robot.name, next_index=0, path=full_path, order=order.name)
+    STATE["routes"].append(Route(robot=best_robot.name, next_index=0, path=full_path, order=order.name))
+    log_event("robot_assigned", {"robot": best_robot.name, "order": order.name, "path": full_path})
+    return best_path
 
 # logger
 def log_event(type_: str, detail: dict):
