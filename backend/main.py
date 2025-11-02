@@ -1,96 +1,8 @@
-from enum import Enum
 from typing import List, Dict, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from fastapi.responses import HTMLResponse
-
-# -----------------------------
-# Domain Models (Pydantic)
-# -----------------------------
-
-class RobotStatus(str, Enum):
-    IDLE = "IDLE"
-    EXECUTING = "EXECUTING"
-
-class OrderStatus(str, Enum):
-    NEW = "NEW"
-    IN_PROGRESS = "IN_PROGRESS"
-    DONE = "DONE"
-    FAILED = "FAILED"
-
-class Robot(BaseModel):
-    name: str
-    status: RobotStatus
-    node: str
-
-class Order(BaseModel):
-    name: str
-    source: str
-    target: str
-    status: OrderStatus = OrderStatus.NEW
-
-class Edge(BaseModel):
-    from_: str = Field(alias="from")
-    to: str
-    weight: float = 1.0
-
-    class Config:
-        allow_population_by_field_name = True
-        json_encoders = {RobotStatus: lambda s: s.value, OrderStatus: lambda s: s.value}
-
-class Graph(BaseModel):
-    nodes: List[str]
-    edges: List[Edge]
-
-# -----------------------------
-# API Schemas
-# -----------------------------
-
-class AddOrderRequest(BaseModel):
-    name: str
-    source: str
-    target: str
-
-# Optional: include computed assignment in future
-class OrdersResponse(BaseModel):
-    orders: List[Order]
-
-class RobotsResponse(BaseModel):
-    robots: List[Robot]
-
-# -----------------------------
-# In-memory State (Replace with DB for prod)
-# -----------------------------
-
-STATE: Dict[str, List] = {
-    "orders": [],
-    "robots": [],
-}
-
-GRAPH: Graph = Graph(
-    nodes=["A", "B", "C", "D", "E", "F"],
-    edges=[
-        Edge(**{"from": "A", "to": "B", "weight": 1}),
-        Edge(**{"from": "B", "to": "C", "weight": 2}),
-        Edge(**{"from": "C", "to": "D", "weight": 2}),
-        Edge(**{"from": "B", "to": "E", "weight": 3}),
-        Edge(**{"from": "E", "to": "F", "weight": 1}),
-        Edge(**{"from": "D", "to": "F", "weight": 2}),
-        # Treat edges as undirected for simplicity; callers may add both directions explicitly if desired
-    ],
-)
-
-SEED_ROBOTS = [
-    Robot(name="R1", status=RobotStatus.IDLE, node="A"),
-    Robot(name="R2", status=RobotStatus.EXECUTING, node="C"),
-    Robot(name="R3", status=RobotStatus.IDLE, node="E"),
-]
-
-SEED_ORDERS = [
-    Order(name="O-1001", source="B", target="D", status=OrderStatus.NEW),
-]
-
+from backend.models import *
 # -----------------------------
 # App Setup
 # -----------------------------
@@ -174,13 +86,6 @@ async def get_graph() -> Graph:
 # Optional: additional stubs to support simulation (Frontend can ignore)
 # -----------------------------
 
-class Route(BaseModel):
-    robot: str
-    path: List[str]  # sequence of node ids
-
-class RoutesResponse(BaseModel):
-    routes: List[Route]
-
 # NOTE: These are *stubs* for stretch goals; they currently return empty data.
 @app.get("/routes", response_model=RoutesResponse, tags=["simulation"])
 async def get_routes() -> RoutesResponse:
@@ -193,17 +98,128 @@ async def tick() -> Dict[str, str]:
     return {"status": "ok", "note": "tick advanced (no-op stub)"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard():
+async def dashboard() -> str:
+    """
+    Display real-time AGV fleet dashboard with robots and orders status.
+    
+    Returns:
+        HTML page showing current robot states and order progress
+    """
     robots = STATE["robots"]
     orders = STATE["orders"]
-    html = "<h1>AGV Fleet Dashboard</h1>"
-    html += "<h2>Robots</h2><ul>"
+    
+    # Create a mapping of node -> list of robots at that node
+    node_robots: Dict[str, List[str]] = {}
+    for node in GRAPH.nodes:
+        node_robots[node] = []
+    
+    for robot in robots:
+        if robot.node in node_robots:
+            node_robots[robot.node].append(robot.name)
+    
+    # SVG layout configuration
+    node_positions = {
+        "A": (50, 50),
+        "B": (150, 50), 
+        "C": (250, 50),
+        "D": (250, 150),
+        "E": (150, 150),
+        "F": (50, 150)
+    }
+    
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AGV Fleet Dashboard</title>
+        <style>
+            .dashboard { font-family: Arial, sans-serif; margin: 20px; }
+            .container { display: flex; gap: 30px; margin-bottom: 30px; }
+            .map-section { flex: 1; }
+            .status-section { flex: 1; }
+            .svg-map { border: 1px solid #ccc; background: #f9f9f9; }
+            .node { fill: #4CAF50; stroke: #2E7D32; stroke-width: 2; }
+            .node-text { font-size: 14px; font-weight: bold; fill: white; text-anchor: middle; }
+            .edge { stroke: #666; stroke-width: 2; }
+            .edge-text { font-size: 12px; fill: #333; }
+            .robot { fill: #FF5722; stroke: #D84315; stroke-width: 2; }
+            .robot-text { font-size: 10px; fill: white; text-anchor: middle; }
+            ul { list-style-type: none; padding: 0; }
+            li { margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px; }
+            .idle { color: #4CAF50; }
+            .executing { color: #FF5722; }
+        </style>
+    </head>
+    <body>
+        <div class="dashboard">
+            <h1>🚀 AGV Fleet Dashboard</h1>
+            <div class="container">
+                <div class="map-section">
+                    <h2>Map Visualization</h2>
+    """
+    
+    # SVG Map
+    svg_width = 400
+    svg_height = 250
+    html += f'<svg width="{svg_width}" height="{svg_height}" class="svg-map">'
+    
+    # Draw edges first (so they appear behind nodes)
+    for edge in GRAPH.edges:
+        if edge.from_ in node_positions and edge.to in node_positions:
+            x1, y1 = node_positions[edge.from_]
+            x2, y2 = node_positions[edge.to]
+            html += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" class="edge" />'
+            # Edge label (weight)
+            mid_x = (x1 + x2) / 2
+            mid_y = (y1 + y2) / 2
+            html += f'<text x="{mid_x}" y="{mid_y - 5}" class="edge-text">{edge.weight}</text>'
+    
+    # Draw nodes
+    for node, (x, y) in node_positions.items():
+        # Node circle
+        html += f'<circle cx="{x}" cy="{y}" r="20" class="node" />'
+        # Node label
+        html += f'<text x="{x}" y="{y + 5}" class="node-text">{node}</text>'
+        
+        # Draw robots at this node
+        robots_here = node_robots[node]
+        for i, robot_name in enumerate(robots_here):
+            robot_x = x - 15 + (i * 15)
+            robot_y = y - 30
+            html += f'<circle cx="{robot_x}" cy="{robot_y}" r="8" class="robot" />'
+            html += f'<text x="{robot_x}" y="{robot_y + 3}" class="robot-text">{robot_name}</text>'
+    
+    html += '</svg>'
+    
+    # Status sections
+    html += """
+                </div>
+                <div class="status-section">
+                    <h2>Robots Status</h2>
+                    <ul>
+    """
+    
     for r in robots:
-        html += f"<li>{r.name} — {r.status} at {r.node}</li>"
-    html += "</ul><h2>Orders</h2><ul>"
+        status_class = "idle" if r.status == RobotStatus.IDLE else "executing"
+        status_icon = "🟢" if r.status == RobotStatus.IDLE else "🔴"
+        html += f'<li class="{status_class}">{status_icon} <strong>{r.name}</strong> — {r.status.value} at <strong>{r.node}</strong></li>'
+    
+    html += """
+                    </ul>
+                    
+                    <h2>Orders</h2>
+                    <ul>
+    """
+    
     for o in orders:
-        html += f"<li>{o.name}: {o.source} → {o.target} [{o.status}]</li>"
-    html += "</ul>"
+        status_icon = {
+            OrderStatus.NEW: "🆕",
+            OrderStatus.IN_PROGRESS: "🔄", 
+            OrderStatus.DONE: "✅",
+            OrderStatus.FAILED: "❌"
+        }.get(o.status, "❓")
+        html += f'<li>{status_icon} <strong>{o.name}</strong>: {o.source} → {o.target} [{o.status.value}]</li>'
+    
     return html
 # -----------------------------
 # Run (if executed directly)
