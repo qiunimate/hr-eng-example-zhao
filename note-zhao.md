@@ -9,7 +9,6 @@ The reason I started with backend challenge is that it is mainly in python. I ca
 ### 1. Comprehension and configuration
 The first step is to read the README, instruction email and the provided code.
 
-
 ```text
 # Prompt 1: Context interpretation:
 Here are the context email and README.md of a interview challenge. Summarize the requirements and tasks for the backend component. Also how do you suggest me to complete this challenge effectively?
@@ -25,6 +24,10 @@ How to set up the provided codebase for local development and testing? Please pr
 
 #### 2.0 Plan & overall strategy
 We need to figure out what is the best order to implement the features. So that we have a working system as soon as possible, and then we can iterate on it. 
+
+```text
+how do you suggest me to tackle this challenge effectively? Please provide a step-by-step plan and overall strategy.
+```
 
 So here is my plan:
 1. Dashboard + State & validation
@@ -67,3 +70,8 @@ The class Route including robot name, next index, path and order name is created
 
 There is a problem that if an order is created but there is no idle robot, then the order will not be assigned. This is acceptable for now, but we can solve this in the tick function.
 
+#### 2.4 Tick simulation
+The tick simulation will update the robots' positions according to their assigned routes. If a robot reaches the destination of its assigned order, it will become idle again. Also. all the failed/new orders will be re-evaluated for assignment to idle robots.
+
+#### 2.5 OpenAPI polish + Deterministic tests
+Finally, we need to polish the OpenAPI documentation and write deterministic tests to ensure the correctness of the implementation.

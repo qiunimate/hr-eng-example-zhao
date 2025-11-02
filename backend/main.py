@@ -85,6 +85,9 @@ async def get_events(limit: Optional[int] = None, since: Optional[str] = None):
 
 @app.post("/addOrder", response_model=Order, tags=["orders"])
 async def add_order(req: AddOrderRequest) -> Order:
+    """
+    Add a new order to the system.
+    """
     # Validate nodes exist in graph
     nodes = _graph_nodes_set()
     if req.source not in nodes or req.target not in nodes:
@@ -123,6 +126,11 @@ async def get_routes() -> RoutesResponse:
 
 @app.post("/tick", tags=["simulation"])
 async def tick() -> Dict[str, str]:
+    """
+    Advance the simulation by one tick:
+    - Move robots along their routes
+    - Assign new/failed orders if possible
+    """
     for route in STATE.get("routes", []):
         robot = next(r for r in STATE["robots"] if r.name == route.robot)
         

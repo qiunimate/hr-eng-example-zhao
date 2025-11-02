@@ -19,7 +19,7 @@ Choose 3-5
 
 [x] State & validation: Validate nodes exist; keep state in memory; guard against duplicate order names; return helpful 4xx errors.
 
-[] OpenAPI polish: Ensure models/enums are documented; add tags and examples; verify with /docs.
+[x] OpenAPI polish: Ensure models/enums are documented; add tags and examples; verify with /docs.
 
 [] Deterministic tests: Unit tests for pathfinding, scheduling, and reservations; seed test graph/robots; use property tests for “path cost monotonicity”.
 
@@ -62,7 +62,7 @@ Choose 3-5
 
 [x]App loads graph and lists robots + orders.
 [x]Adding an order triggers scheduling when an IDLE robot exists.
-[]Robots visibly move along paths over time; orders progress to DONE.
+[x]Robots visibly move along paths over time; orders progress to DONE.
 [x]No runtime errors; basic empty/error states handled.
 
 # Frontend

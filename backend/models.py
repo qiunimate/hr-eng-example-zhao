@@ -24,14 +24,14 @@ class Robot(BaseModel):
 
 class Order(BaseModel):
     name: str
-    source: str
-    target: str
+    source: str # from node
+    target: str # to node
     status: OrderStatus = OrderStatus.NEW
 
 class Edge(BaseModel):
     from_: str = Field(alias="from")
     to: str
-    weight: float = 1.0
+    weight: float = 1.0 # how much ticks to traverse
 
     class Config:
         allow_population_by_field_name = True
@@ -96,6 +96,7 @@ GRAPH: Graph = Graph(
     ],
 )
 
+# Manual example positions for nodes (for frontend visualization)
 NODE_POSITIONS = {
     "A": (50, 50),
     "B": (150, 50),
@@ -105,12 +106,14 @@ NODE_POSITIONS = {
     "F": (200, 250)
     }
 
+# Seed data for testing
 SEED_ROBOTS = [
     Robot(name="R1", status=RobotStatus.IDLE, node="A"),
     Robot(name="R2", status=RobotStatus.EXECUTING, node="C"),
     Robot(name="R3", status=RobotStatus.IDLE, node="E"),
 ]
 
+# Seed orders for testing
 SEED_ORDERS = [
     Order(name="O-1001", source="B", target="D", status=OrderStatus.NEW),
 ]

@@ -3,7 +3,7 @@ from backend.models import *
 import heapq
 from datetime import datetime
 
-# path finding
+# path finding with Dijkstra's algorithm
 def shortest_path(start: str, goal: str) -> tuple[float, list[str]]:
     nodes = set(GRAPH.nodes)
     if start not in nodes or goal not in nodes:
