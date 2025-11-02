@@ -23,7 +23,7 @@ How to set up the provided codebase for local development and testing? Please pr
 
 ### 2. Problem solving
 
-#### 2.0 Plan
+#### 2.0 Plan & overall strategy
 We need to figure out what is the best order to implement the features. So that we have a working system as soon as possible, and then we can iterate on it. 
 
 So here is my plan:
@@ -33,6 +33,11 @@ So here is my plan:
 4. Tick simulation
 5. OpenAPI polish + Deterministic tests
 6. to be continued...
+
+Overall strategy:
+```text
+for all the functions, write doc string and comments to explain the logic.
+```
 
 #### 2.1 Dashboard
 
@@ -45,3 +50,14 @@ I want to firstly create a dashboard page to visualize essential information as 
 
 Please also add doc string for each function you create.
 ```
+
+#### 2.2 Path finding algorithm
+The second step is to implement the path finding algorithm, which can be used by the scheduler to assign the nearest idle robot to an order. 
+
+```text
+please implement Dijkstra's algorithm for path finding. The function should take in a start node and a goal node, and return the shortest distance and the path taken. 
+
+Also add doc string and comments explaining the logic.
+```
+
+#### 2.3 Scheduler

@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from backend.models import *
+from backend.helpers import log_event
 # -----------------------------
 # App Setup
 # -----------------------------
@@ -68,6 +69,8 @@ async def add_order(req: AddOrderRequest) -> Order:
 
     order = Order(name=req.name, source=req.source, target=req.target, status=OrderStatus.NEW)
     STATE["orders"].append(order)
+    log_event("order_created", {"order": order.name, "source": order.source, "target": order.target})
+
     return order
 
 @app.get("/getOrders", response_model=OrdersResponse, tags=["orders"])

@@ -48,6 +48,11 @@ class Route(BaseModel):
 class RoutesResponse(BaseModel):
     routes: List[Route]
 
+class Event(BaseModel):
+    time: str
+    type: str
+    detail: dict
+
 # -----------------------------
 # API Schemas
 # -----------------------------
