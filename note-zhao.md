@@ -73,5 +73,10 @@ There is a problem that if an order is created but there is no idle robot, then 
 #### 2.4 Tick simulation
 The tick simulation will update the robots' positions according to their assigned routes. If a robot reaches the destination of its assigned order, it will become idle again. Also. all the failed/new orders will be re-evaluated for assignment to idle robots.
 
-#### 2.5 OpenAPI polish + Deterministic tests
-Finally, we need to polish the OpenAPI documentation and write deterministic tests to ensure the correctness of the implementation.
+#### 2.5 OpenAPI polish + tests
+Finally, we need to polish the OpenAPI documentation and write tests to ensure the correctness of the implementation.
+
+## Summary
+In this challenge, I have implemented a backend system for robot scheduling and pathfinding. The main components include a dashboard for visualization, a pathfinding algorithm using Dijkstra's algorithm, a scheduler for assigning robots to orders, and a tick simulation for updating robot positions. The system is designed to be extensible and maintainable, with clear documentation and testing to ensure reliability.
+
+I really enjoyed solving this challenge, the real-world problem of robot scheduling and pathfinding is interesting. I look forward to discussing my solution with you!
