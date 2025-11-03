@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from backend.models import *
 from backend.helpers import *
 # -----------------------------
@@ -55,6 +55,10 @@ async def seed_state() -> None:
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(r"backend\static\favicon.ico")
 
 @app.get("/events", response_model=List[Event])
 async def get_events(limit: Optional[int] = None, since: Optional[str] = None):
