@@ -21,7 +21,7 @@ Choose 3-5
 
 [x] OpenAPI polish: Ensure models/enums are documented; add tags and examples; verify with /docs.
 
-[] Deterministic tests: Unit tests for pathfinding, scheduling, and reservations; seed test graph/robots; use property tests for “path cost monotonicity”.
+[x] Deterministic tests: Unit tests for pathfinding, scheduling, and reservations; seed test graph/robots; use property tests for “path cost monotonicity”.
 
 
 #### Nice-to-haves
